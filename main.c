@@ -6,6 +6,7 @@
 #include "parser.h"
 #include <stdlib.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define AZUL "\x1b[34m"
 #define BLANCO "\x1b[0m"
@@ -15,6 +16,7 @@ tline *line;
 
 //Funciones
 void mostrarPrompt();
+_Bool commandExists();
 
 int main() {
     char command[1024];
@@ -34,13 +36,18 @@ int main() {
                 execvp(line->commands[0].argv[0], line->commands[0].argv + 1);
             } else { //Proceso padre
                 if (line->background) {
-                    
+
                 } else {
-                    waitpid(pid, NULL, 0);
+                    if (commandExists(line->commands[0].argv)) {
+                        waitpid(pid, NULL, 0);
+                    } else {
+                        fprintf(stderr, "El comando introducido no existe: %s", strerror(errno));
+                        exit(1);
+                    }
                 }
-                /*printf("%s",line->commands[0].argv[0]);
-                printf("%s",line->commands[0].argv[1]);
-                printf("%s",line->commands[0].argv[2]);*/
+                printf("1== %s",line->commands[0].argv[0]);
+                printf("1== %s",line->commands[0].argv[1]);
+                printf("1== %s",line->commands[0].argv[2]);
             }
         } else if (line->ncommands>1) {
             printf(BLANCO"Ejecutando mas de 1 comando %s",command);
@@ -53,4 +60,12 @@ void mostrarPrompt() {
     char path[1024];
     getcwd(path,sizeof(path));
     printf(AZUL"%s> ",path);
+}
+
+_Bool commandExists(char *command) {
+    if (command==NULL) {
+        return False;
+    } else {
+        return True;
+    }
 }
