@@ -28,7 +28,7 @@ int main() {
             if(pid < 0){ //proceso inexistente
                 fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s", strerror(errno));
                 exit(1);
-            } else if (pid == 0){ //proceso padre
+            } else if (pid == 0){ //proceso hijo
 
             }
 
