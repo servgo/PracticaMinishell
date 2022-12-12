@@ -101,7 +101,9 @@ void ejeCd(){
             chdir(line->commands[0].argv[1]);
             printf("Directorio actual modificado correctamente a: %s \n", getcwd(buf, 1024));
         } else {
-            perror("Error al modificar el directorio");
+            perror("Error al modificar el directorio\n");
         }
+    } else {
+        printf("Demasiados argumentos");
     }
 }
