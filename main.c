@@ -6,17 +6,18 @@
 #include "parser.h"
 #include <stdlib.h>
 #include <errno.h>
-#include <stdbool.h>
+
 
 #define AZUL "\x1b[34m"
 #define BLANCO "\x1b[0m"
+#define VERDE "\x1b[32m"
 
 //Variables globales
 tline *line;
 
 //Funciones
 void mostrarPrompt();
-_Bool commandExists();
+int commandExists(char *command);
 
 int main() {
     char command[1024];
@@ -26,19 +27,26 @@ int main() {
     mostrarPrompt();
     while(fgets(command,1024,stdin)) {
         line = tokenize(command);
+
+//Si introducen 1 comando
         if (line->ncommands==1) {
+
+            if (strcmp(line->commands[0].argv[0],"cd")) {
+
+            } else if (strcmp(line ->commands[0].argv[0], ""))
+
+
             pid = fork();
             if (pid<0) {
                 fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s", strerror(errno));
                 exit(1);
             } else if (pid==0) { //Proceso hijo
-                printf(BLANCO);
-                execvp(line->commands[0].argv[0], line->commands[0].argv + 1);
+                execvp(line->commands[0].argv[0], line->commands[0].argv);
             } else { //Proceso padre
                 if (line->background) {
 
                 } else {
-                    if (commandExists(line->commands[0].argv)) {
+                    if (commandExists(line.commands[0].argv)) {
                         waitpid(pid, NULL, 0);
                     } else {
                         fprintf(stderr, "El comando introducido no existe: %s", strerror(errno));
@@ -49,6 +57,8 @@ int main() {
                 printf("1== %s",line->commands[0].argv[1]);
                 printf("1== %s",line->commands[0].argv[2]);
             }
+
+//Si introducen mas de 1 comando
         } else if (line->ncommands>1) {
             printf(BLANCO"Ejecutando mas de 1 comando %s",command);
         }
@@ -59,13 +69,9 @@ int main() {
 void mostrarPrompt() {
     char path[1024];
     getcwd(path,sizeof(path));
-    printf(AZUL"%s> ",path);
+    printf(AZUL"msh:~%s> ",path);
 }
 
-_Bool commandExists(char *command) {
-    if (command==NULL) {
-        return False;
-    } else {
-        return True;
-    }
+int commandExists(char *command) {
+    return command == NULL;
 }
