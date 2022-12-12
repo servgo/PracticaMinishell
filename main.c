@@ -16,8 +16,10 @@ tline *line;
 
 //Funciones
 void mostrarPrompt();
-
 int commandExists(char *command);
+void ejeCd();
+
+
 
 int main() {
     char command[1024];
@@ -28,12 +30,14 @@ int main() {
     while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
 
+//--------------------------------------------------------------------------
 //Si introducen 1 mandato
+//--------------------------------------------------------------------------
         if (line->ncommands == 1) {
 
             //Si el mandato es cd
             if (strcmp(line->commands[0].argv[0], "cd") == 0) {
-                printf("cd");
+                ejeCd();
 
             //Si el mandato es jobs
             } else if (strcmp(line->commands[0].argv[0], "jobs") == 0) {
@@ -85,4 +89,19 @@ void mostrarPrompt() {
 
 int commandExists(char *command) {
     return command == NULL;
+}
+
+void ejeCd(){
+    char buf[1024];
+    if (line->commands[0].argc == 1){
+        chdir(getenv("HOME"));
+        printf("Directorio actual modificado a: %s \n", getcwd(buf, 1024));
+    } else if (line->commands->argc == 2){
+        if (chdir(line->commands[0].argv[1]) == 0){
+            chdir(line->commands[0].argv[1]);
+            printf("Directorio actual modificado correctamente a: %s \n", getcwd(buf, 1024));
+        } else {
+            perror("Error al modificar el directorio");
+        }
+    }
 }
