@@ -10,13 +10,13 @@
 
 #define AZUL "\x1b[34m"
 #define BLANCO "\x1b[0m"
-#define VERDE "\x1b[32m"
 
 //Variables globales
 tline *line;
 
 //Funciones
 void mostrarPrompt();
+
 int commandExists(char *command);
 
 int main() {
@@ -25,42 +25,53 @@ int main() {
     pid_t pid;
 
     mostrarPrompt();
-    while(fgets(command,1024,stdin)) {
+    while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
 
-//Si introducen 1 comando
-        if (line->ncommands==1) {
+//Si introducen 1 mandato
+        if (line->ncommands == 1) {
 
-            if (strcmp(line->commands[0].argv[0],"cd")) {
+            //Si el mandato es cd
+            if (strcmp(line->commands[0].argv[0], "cd") == 0) {
+                printf("cd");
 
-            } else if (strcmp(line ->commands[0].argv[0], ""))
+            //Si el mandato es jobs
+            } else if (strcmp(line->commands[0].argv[0], "jobs") == 0) {
+                printf("jobs");
 
+            //Si el mandato es fg
+            } else if (strcmp(line->commands[0].argv[0], "fg") == 0) {
+                printf("fg");
 
-            pid = fork();
-            if (pid<0) {
-                fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s", strerror(errno));
-                exit(1);
-            } else if (pid==0) { //Proceso hijo
-                execvp(line->commands[0].argv[0], line->commands[0].argv);
-            } else { //Proceso padre
-                if (line->background) {
+            //Si el mandato es otro cualquiera
+            } else { //Es otro mandato
+                pid = fork();
 
-                } else {
-                    if (commandExists(line.commands[0].argv)) {
-                        waitpid(pid, NULL, 0);
-                    } else {
-                        fprintf(stderr, "El comando introducido no existe: %s", strerror(errno));
+                if (pid < 0) {
+                    fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s \n", strerror(errno));
+                    exit(1);
+
+                } else if (pid == 0) { //Proceso hijo
+                    if (commandExists(line->commands[0].filename) == 0) {
+                        execvp(line->commands[0].filename, line->commands[0].argv);
+                        fprintf(stderr, "Error al ejecutar el mandato \n");
+                        exit(1);
+                    } else{
+                        fprintf(stderr, "El mandato %s no existe... \n", line->commands[0].argv[0]);
                         exit(1);
                     }
+                } else { //Proceso padre
+                    if (line->background) {
+
+                    } else {
+                        waitpid(pid, NULL, 0);
+                    }
                 }
-                printf("1== %s",line->commands[0].argv[0]);
-                printf("1== %s",line->commands[0].argv[1]);
-                printf("1== %s",line->commands[0].argv[2]);
             }
 
-//Si introducen mas de 1 comando
-        } else if (line->ncommands>1) {
-            printf(BLANCO"Ejecutando mas de 1 comando %s",command);
+//Si introduce mas de 1 mandato
+        } else if (line->ncommands > 1) {
+            printf(BLANCO"Ejecutando mas de 1 comando %s", command);
         }
         mostrarPrompt();
     }
@@ -68,8 +79,8 @@ int main() {
 
 void mostrarPrompt() {
     char path[1024];
-    getcwd(path,sizeof(path));
-    printf(AZUL"msh:~%s> ",path);
+    getcwd(path, sizeof(path));
+    printf(AZUL"msh:~%s> " BLANCO, path);
 }
 
 int commandExists(char *command) {
