@@ -98,7 +98,6 @@ void ejeCd(){
         printf("Directorio actual modificado a: %s \n", getcwd(buf, 1024));
     } else if (line->commands->argc == 2){
         if (chdir(line->commands[0].argv[1]) == 0){
-            chdir(line->commands[0].argv[1]);
             printf("Directorio actual modificado correctamente a: %s \n", getcwd(buf, 1024));
         } else {
             perror("Error al modificar el directorio: ");
