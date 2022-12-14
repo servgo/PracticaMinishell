@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include "TListaEnlazadaSImple.h"
+#include "TList.h"
 
 
 #define AZUL "\x1b[34m"
@@ -20,6 +20,9 @@ tline *line;
 void mostrarPrompt();
 int commandExists(char *command);
 void ejeCd();
+int redirInput();
+int redirOutput();
+int redirError();
 
 
 
@@ -64,15 +67,15 @@ int main() {
                     }
 
                     if(line->redirect_input){
-
+                        redirInput();
                     }
 
                     if(line->redirect_error){
-
+                        redirError();
                     }
 
                     if(line->redirect_output){
-
+                        redirOutput();
                     }
 
                     if (commandExists(line->commands[0].filename) == 0) {
@@ -138,7 +141,6 @@ int redirInput() {
 }
 
 int redirOutput() {
-
     int file = creat(line->redirect_output, 0664);
     if (file != -1) {
         dup2(file,STDOUT_FILENO);

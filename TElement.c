@@ -2,7 +2,7 @@
 // Created by sergio on 14/12/22.
 //
 
-#include "TElemento.h"
+#include "TElement.h"
 #include "string.h"
 #include "stdio.h"
 
@@ -26,4 +26,3 @@ int igualElemento(TElemento *e1, TElemento *e2) {
     return e1->pidAlmacen == e2->pidAlmacen;
 }
 
-#include "TElemento.h"

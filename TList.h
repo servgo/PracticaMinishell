@@ -2,19 +2,18 @@
 // Created by sergio on 14/12/22.
 //
 
-#ifndef PRACTICAMINISHELL_TLISTAENLAZADASIMPLE_H
-#define PRACTICAMINISHELL_TLISTAENLAZADASIMPLE_H
+#ifndef PRACTICAMINISHELL_TLIST_H
+#define PRACTICAMINISHELL_TLIST_H
 
 
-#include "TElemento.h"
+#include "TElement.h"
 
 
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "TElemento.h"
 
-typedef struct Nodo {
+typedef struct{
     TElemento info;
     struct Nodo *sig;
 } TNodo;
@@ -42,4 +41,4 @@ int longitudLista(TLista *l);
 
 
 
-#endif //PRACTICAMINISHELL_TLISTAENLAZADASIMPLE_H
+#endif //PRACTICAMINISHELL_TLIST_H

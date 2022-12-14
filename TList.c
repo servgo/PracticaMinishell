@@ -2,7 +2,7 @@
 // Created by sergio on 14/12/22.
 //
 
-#include "TListaEnlazadaSImple.h"
+#include "TList.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -15,7 +15,7 @@ void mostrarLista(TLista *l) {
     TLista aux = *l;
     int i = 1;
     while (aux != NULL) { //  while(aux)
-        printf("[%d] Ejecutnado    ", i);
+        printf("[%d] Ejecutando    ", i);
         mostrarElemento(&aux->info);
         i++;
         aux = aux->sig;
