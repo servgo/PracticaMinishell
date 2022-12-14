@@ -6,6 +6,8 @@
 #include "parser.h"
 #include <stdlib.h>
 #include <errno.h>
+#include <fcntl.h>
+#include "TListaEnlazadaSImple.h"
 
 
 #define AZUL "\x1b[34m"
@@ -56,6 +58,23 @@ int main() {
                     exit(1);
 
                 } else if (pid == 0) { //Proceso hijo
+
+                    if(line->background){
+
+                    }
+
+                    if(line->redirect_input){
+
+                    }
+
+                    if(line->redirect_error){
+
+                    }
+
+                    if(line->redirect_output){
+
+                    }
+
                     if (commandExists(line->commands[0].filename) == 0) {
                         execvp(line->commands[0].filename, line->commands[0].argv);
                         fprintf(stderr, "Error al ejecutar el mandato \n");
@@ -104,5 +123,39 @@ void ejeCd(){
         }
     } else {
         printf("Demasiados argumentos");
+    }
+}
+
+int redirInput() {
+    int file = open(line->redirect_input, O_RDONLY);
+    if (file != -1) {
+        dup2(file,0);
+        return 0;
+    }else {
+        fprintf(stderr ,"Error al abrir el fichero. %s\n" ,strerror(errno));
+        return -1;
+    }
+}
+
+int redirOutput() {
+
+    int file = creat(line->redirect_output, 0664);
+    if (file != -1) {
+        dup2(file,STDOUT_FILENO);
+        return 0;
+    }else {
+        fprintf(stderr ,"Error al abrir el fichero. %s\n" ,strerror(errno));
+        return -1;
+    }
+}
+
+int redirError() {
+    int file = creat(line->redirect_error, 0664);
+    if (file != -1) {
+        dup2(file,2);
+        return 0;
+    }else {
+        fprintf(stderr ,"Error al abrir el fichero. %s\n" ,strerror(errno));
+        return -1;
     }
 }

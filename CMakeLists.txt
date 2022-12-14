@@ -3,4 +3,4 @@ project(PracticaMinishell C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(PracticaMinishell main.c)
+add_executable(PracticaMinishell main.c TElemento.c TElemento.h TListaEnlazadaSImple.c TListaEnlazadaSImple.h)
