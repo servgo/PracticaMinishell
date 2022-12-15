@@ -14,6 +14,7 @@ void crearElemento(pid_t *pidAlmacen, char *line, int ncommands, TElemento *e) {
 
 void mostrarElemento(TElemento *e) {
     printf("%s", e->line);
+    printf("%d", e->pidAlmacen);
 }
 
 void asignarElemento(TElemento *e1, TElemento *e2) {

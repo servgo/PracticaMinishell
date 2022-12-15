@@ -33,6 +33,13 @@ int main() {
     while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
         pid_t *pids = malloc(sizeof(pid_t) * line->ncommands);
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//                                                Si introduce 1 mandato
+//----------------------------------------------------------------------------------------------------------------------
+
+
         if (line->ncommands == 1) { //Si introducen 1 mandato
             if (strcmp(line->commands[0].argv[0], "cd") == 0) { //Si el mandato es cd
                 ejeCd();
@@ -78,7 +85,7 @@ int main() {
                     if (line->background) {
                         printf("El mandato se ha mandado a background\n");
                         TElemento e;
-                        crearElemento(pids[0], command, line->ncommands, &e);
+                        crearElemento(pids, command, line->ncommands, &e);
                         insertarLista(&e, backGround);
                         mostrarLista(backGround);
                     } else {
@@ -94,7 +101,13 @@ int main() {
                     }
                 }
             }
-        } else if (line->ncommands > 1) { // Si introduce mas de 1 mandato
+
+//----------------------------------------------------------------------------------------------------------------------
+//                                          Si introduce mas de 1 mandato
+//----------------------------------------------------------------------------------------------------------------------
+
+
+        } else if (line->ncommands > 1) {
             //Creamos las tuberias
             int **pipes;
             pipes = (int **) malloc( (line->ncommands - 1) * sizeof(int*));
@@ -160,10 +173,14 @@ int main() {
                 close(pipes[j][1]);
                 free(pipes[j]);
             }
+            for (int i = 1; i < line->ncommands; ++i) {
+                waitpid(pids[i], NULL, 0);
+            }
             free(pipes);
         }
-        mostrarPrompt();
+
         free(pids);
+        mostrarPrompt();
     }
 
     for (int i = 0; i < longitudLista(backGround) -1; ++i) {
