@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include "TList.h"
+#include "TLista.h"
 
 #define AZUL "\x1b[34m"
 #define BLANCO "\x1b[0m"
@@ -33,13 +33,6 @@ int main() {
     while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
         pid_t *pids = malloc(sizeof(pid_t) * line->ncommands);
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//                                                Si introduce 1 mandato
-//----------------------------------------------------------------------------------------------------------------------
-
-
         if (line->ncommands == 1) { //Si introducen 1 mandato
             if (strcmp(line->commands[0].argv[0], "cd") == 0) { //Si el mandato es cd
                 ejeCd();
@@ -49,24 +42,26 @@ int main() {
                 printf("fg");
             } else { //Si el mandato es otro cualquiera
                 pids[0] = fork();
-
                 if (pids[0] < 0) {
                     fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s \n", strerror(errno));
                     exit(1);
                 } else if (pids[0] == 0) { //Proceso hijo
                     if (line->redirect_input) {
-                        if (redirInput() != -1) {
-                            redirInput();
+                        if (redirInput()==-1) {
+                            mostrarPrompt();
+                            continue;
                         }
                     }
                     if (line->redirect_error) {
-                        if (redirError() != -1) {
-                            redirError();
+                        if (redirError()==-1) {
+                            mostrarPrompt();
+                            continue;
                         }
                     }
                     if (line->redirect_output) {
-                        if (redirOutput() != -1) {
-                            redirOutput();
+                        if (redirOutput()==-1) {
+                            mostrarPrompt();
+                            continue;
                         }
                     }
                     if (commandExists(line->commands[0].filename) == 0) {
@@ -78,16 +73,15 @@ int main() {
                         fprintf(stderr, "Error al ejecutar el mandato \n");
                         exit(1);
                     } else {
-                        fprintf(stderr, "El mandato %s no existe... \n", line->commands[0].argv[0]);
+                        fprintf(stderr, "%s: No se encuentra el mandato \n", line->commands[0].argv[0]);
                         exit(1);
                     }
                 } else { //Proceso padre
                     if (line->background) {
-                        printf("El mandato se ha mandado a background\n");
                         TElemento e;
-                        crearElemento(pids, command, line->ncommands, &e);
+                        crearElemento(pids[0], command, line->ncommands, &e);
                         insertarLista(&e, backGround);
-                        mostrarLista(backGround);
+                        printf("[%d] %d \n",longitudLista(backGround),pids[0]);
                     } else {
                         int est;
                         waitpid(pids[0], &est, 0);
@@ -101,13 +95,7 @@ int main() {
                     }
                 }
             }
-
-//----------------------------------------------------------------------------------------------------------------------
-//                                          Si introduce mas de 1 mandato
-//----------------------------------------------------------------------------------------------------------------------
-
-
-        } else if (line->ncommands > 1) {
+        } else if (line->ncommands > 1) { // Si introduce mas de 1 mandato
             //Creamos las tuberias
             int **pipes;
             pipes = (int **) malloc( (line->ncommands - 1) * sizeof(int*));
@@ -115,56 +103,50 @@ int main() {
                 pipes[i] = (int *) malloc(2 * sizeof(int*));
                 pipe(pipes[i]);
             }
-            //Recorremos todos los mandatos introducidos
             for (int i = 0; i < line->ncommands; i++) {
-                pids[i] = fork();
-                if (pids[i] < 0) {
-                    fprintf(stderr, "Se produjo un error al crear el proceso hijo.\n");
-                    exit(-1);
-                } else if (pids[i] == 0) { //Proceso hijo
-                    //Si el proceso es el primero tendremos que redirigir la salida del primer mandato a la salida de la
-                    //primera tuberia y cerrar la lectura en ella
-                    if (i == 0) {
-
-                        //comprobamos que si hay redireccion de entrada
-                        if (line->redirect_input != NULL) {
-                            redirInput();
+                if (commandExists(line->commands[i].filename) == 0) {
+                    pids[i] = fork();
+                    if (pids[i] < 0) {
+                        fprintf(stderr, "Se produjo un error al crear el proceso hijo.\n");
+                        exit(-1);
+                    } else if (pids[i] == 0) { //Proceso hijo
+                        //Si el proceso es el primero tendremos que redirigir la salida del primer mandato a la salida de la
+                        //primera tuberia y cerrar la lectura en ella
+                        if (i == 0) {
+                            //comprobamos que si hay redireccion de entrada
+                            if (line->redirect_input != NULL) {
+                                redirInput();
+                            }
+                            //De momento, la salida de la primera tuberia es nuestra salida estandar
+                            dup2(pipes[i][1], 1);
+                            //Si es el ultimo proceso :
+                        } else if (i == (line->ncommands - 1)) {
+                            //comprobamos si hay redireccion de error o de salida
+                            if (line->redirect_output != NULL) {
+                                redirOutput();
+                            }
+                            if (line->redirect_error != NULL) {
+                                redirError();
+                            }
+                            //hago que la entrada estandar sea la salida de la anterior
+                            dup2(pipes[i - 1][0], 0);
+                        } else {
+                            //Redirijo la salida anterior a la entrada de la siguiente
+                            dup2(pipes[i - 1][0], 0);
+                            dup2(pipes[i][1], 1);
                         }
-                        //De momento, la salida de la primera tuberia es nuestra salida estandar
-                        dup2(pipes[i][1], 1);
-
-
-                        //Si es el ultimo proceso :
-                    } else if (i == (line->ncommands - 1)) {
-
-                        //comprobamos si hay redireccion de error o de salida
-                        if (line->redirect_output != NULL) {
-                            redirOutput();
+                        //Eierro las tuberias innecesarias
+                        for (int j = 0; j < line->ncommands - 1; j++) {
+                            close(pipes[j][0]);
+                            close(pipes[j][1]);
                         }
-                        if (line->redirect_error != NULL) {
-                            redirError();
-                        }
-
-                        //hago que la entrada estandar sea la salida de la anterior
-                        dup2(pipes[i - 1][0], 0);
-
-                    } else {
-
-                        //Redirijo la salida anterior a la entrada de la siguiente
-                        dup2(pipes[i - 1][0], 0);
-                        dup2(pipes[i][1], 1);
-
+                        //Ejecutamos el mandato
+                        execv(line->commands[i].filename, line->commands[i].argv);
+                        fprintf(stderr, "Error al ejecutar el mandato.\n");
+                        exit(1);
                     }
-                    //Eierro las tuberias innecesarias
-                    for (int j = 0; j < line->ncommands - 1; j++) {
-                        close(pipes[j][0]);
-                        close(pipes[j][1]);
-                    }
-
-                    //Ejecutamos el mandato
-                    execv(line->commands[i].filename, line->commands[i].argv);
-                    fprintf(stderr, "Error al ejecutar el mandato.\n");
-                    exit(1);
+                } else {
+                    fprintf(stderr, "%s: No se encuentra el mandato \n", line->commands[i].argv[0]);
                 }
             }
             //Cierro las tuberías en el padre
@@ -173,14 +155,11 @@ int main() {
                 close(pipes[j][1]);
                 free(pipes[j]);
             }
-            for (int i = 0; i < line->ncommands; ++i) {
-                waitpid(pids[i], NULL, 0); // 0 para que enlace con cualquier proceso de la misma familia
-            }
+            waitpid(pids[line->ncommands-1], NULL, 0);
             free(pipes);
         }
-
-        free(pids);
         mostrarPrompt();
+        free(pids);
     }
 
     for (int i = 0; i < longitudLista(backGround) -1; ++i) {
@@ -225,7 +204,7 @@ int redirInput() {
         dup2(file, 0);
         return 0;
     } else {
-        fprintf(stderr, "Error al abrir el fichero. %s\n", strerror(errno));
+        fprintf(stderr, "%s: Error. %s\n", line->redirect_input, strerror(errno));
         return -1;
     }
 }
@@ -236,7 +215,7 @@ int redirOutput() {
         dup2(file, STDOUT_FILENO);
         return 0;
     } else {
-        fprintf(stderr, "Error al abrir el fichero. %s\n", strerror(errno));
+        fprintf(stderr, "%s: Error. %s\n", line->redirect_output, strerror(errno));
         return -1;
     }
 }
@@ -247,7 +226,7 @@ int redirError() {
         dup2(file, 2);
         return 0;
     } else {
-        fprintf(stderr, "Error al abrir el fichero. %s\n", strerror(errno));
+        fprintf(stderr, "%s: Error. %s\n", line->redirect_error, strerror(errno));
         return -1;
     }
 }
