@@ -1,8 +1,4 @@
-//
-// Created by sergio on 14/12/22.
-//
-
-#include "TList.h"
+#include "TLista.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -17,18 +13,24 @@ void mostrarLista(TLista *l) {
     while (aux != NULL) { //  while(aux)
         printf("[%d] Ejecutando    ", i);
         mostrarElemento(&aux->info);
-        printf("\n");
         i++;
         aux = aux->sig;
     }
 }
 
-
-void insertarLista(TElemento *e, TLista *l) { //Inserta un elemento en la cabecera de la lista
-    TNodo *aux = (TNodo *) malloc(1 * sizeof(TNodo));
-    asignarElemento(e, &aux->info);
-    aux->sig = *l;
-    *l = aux;//actualizar cabecera lista
+void insertarLista(TElemento *e, TLista *l) {
+    TNodo *nuevo = malloc(sizeof(TNodo));
+    asignarElemento(e, &nuevo->info);
+    nuevo->sig = NULL;
+    if (esListaVacia(l)) {
+        *l = nuevo;
+    } else {
+        TNodo *ultimo = *l;
+        while (ultimo->sig != NULL) {
+            ultimo = ultimo->sig;
+        }
+        ultimo->sig = nuevo;
+    }
 }
 
 int devolverPorIndiceLista(int indice,TElemento *e,TLista *l){
@@ -44,6 +46,7 @@ int devolverPorIndiceLista(int indice,TElemento *e,TLista *l){
         return 0;
     }
 }
+
 int eliminarLista(TElemento *e, TLista *l) { //borra la primera aparicion de e
     TNodo *act = *l;
     TNodo *ant = NULL;
@@ -65,7 +68,6 @@ int eliminarLista(TElemento *e, TLista *l) { //borra la primera aparicion de e
     return encontrado;
 }
 
-
 void primeroLista(TElemento *e, TLista *l) { //Condicion: Lista No vacia
     if (!esListaVacia(l)) {
         asignarElemento(&(*l)->info, e);
@@ -81,6 +83,7 @@ void restoLista(TLista *l) { //Condicion: Lista No vacia
         free(aux);
     }
 }
+
 int esListaVacia(TLista *l) {
     return *l == NULL;//return !(*l)
 }
@@ -93,5 +96,4 @@ int longitudLista(TLista *l) {
         aux = aux->sig;
     }
     return longitud;
-
 }
