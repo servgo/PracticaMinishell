@@ -173,8 +173,8 @@ int main() {
                 close(pipes[j][1]);
                 free(pipes[j]);
             }
-            for (int i = 1; i < line->ncommands; ++i) {
-                waitpid(pids[i], NULL, 0);
+            for (int i = 0; i < line->ncommands; ++i) {
+                waitpid(pids[i], NULL, 0); // 0 para que enlace con cualquier proceso de la misma familia
             }
             free(pipes);
         }
