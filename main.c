@@ -7,8 +7,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include "TList.h"
-
+#include "TLista.h"
 
 #define AZUL "\x1b[34m"
 #define BLANCO "\x1b[0m"
@@ -18,85 +17,59 @@ tline *line;
 
 //Funciones
 void mostrarPrompt();
-
 int commandExists(char *command);
-
 void ejeCd();
-
 int redirInput();
-
 int redirOutput();
-
 int redirError();
-
 
 int main() {
     char command[1024];
-    char aux [1024];
-    char *token;
 
     TLista *backGround = malloc(sizeof(TLista));
     crearListaVacia(backGround);
 
     mostrarPrompt();
-
     while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
         pid_t *pids = malloc(sizeof(pid_t) * line->ncommands);
-//----------------------------------------------------------------------------------------------------------------------
-//                                              Si introducen 1 mandato
-//----------------------------------------------------------------------------------------------------------------------
-        if (line->ncommands == 1) {
-
-            //Si el mandato es cd
-            if (strcmp(line->commands[0].argv[0], "cd") == 0) {
+        if (line->ncommands == 1) { //Si introducen 1 mandato
+            if (strcmp(line->commands[0].argv[0], "cd") == 0) { //Si el mandato es cd
                 ejeCd();
-
-                //Si el mandato es jobs
-            } else if (strcmp(line->commands[0].argv[0], "jobs") == 0) {
+            } else if (strcmp(line->commands[0].argv[0], "jobs") == 0) { //Si el mandato es jobs
                 mostrarLista(backGround);
-
-                //Si el mandato es fg
-            } else if (strcmp(line->commands[0].argv[0], "fg") == 0) {
+            } else if (strcmp(line->commands[0].argv[0], "fg") == 0) { //Si el mandato es fg
                 printf("fg");
-
-                //Si el mandato es otro cualquiera
-            } else { //Es otro mandato
+            } else { //Si el mandato es otro cualquiera
                 pids[0] = fork();
 
                 if (pids[0] < 0) {
                     fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s \n", strerror(errno));
                     exit(1);
-
                 } else if (pids[0] == 0) { //Proceso hijo
-
                     if (line->redirect_input) {
                         if (redirInput() != -1) {
                             redirInput();
                         }
                     }
-
                     if (line->redirect_error) {
                         if (redirError() != -1) {
                             redirError();
                         }
                     }
-
                     if (line->redirect_output) {
                         if (redirOutput() != -1) {
                             redirOutput();
                         }
                     }
-
                     if (commandExists(line->commands[0].filename) == 0) {
                         if (line->background) {
                             int devNull = open("/dev/null", O_RDONLY);
                             dup2(devNull, STDIN_FILENO);
                         }
-                            execvp(line->commands[0].filename, line->commands[0].argv);
-                            fprintf(stderr, "Error al ejecutar el mandato \n");
-                            exit(1);
-
+                        execvp(line->commands[0].filename, line->commands[0].argv);
+                        fprintf(stderr, "Error al ejecutar el mandato \n");
+                        exit(1);
                     } else {
                         fprintf(stderr, "El mandato %s no existe... \n", line->commands[0].argv[0]);
                         exit(1);
@@ -105,10 +78,9 @@ int main() {
                     if (line->background) {
                         printf("El mandato se ha mandado a background\n");
                         TElemento e;
-                        crearElemento(pids, aux, line->ncommands, &e);
+                        crearElemento(pids[0], command, line->ncommands, &e);
                         insertarLista(&e, backGround);
-                        strcpy(aux,command);
-                        //mostrarLista(backGround);
+                        mostrarLista(backGround);
                     } else {
                         int est;
                         waitpid(pids[0], &est, 0);
@@ -116,17 +88,13 @@ int main() {
                             int status;
                             pid_t terminado = waitpid(-1, &status, WNOHANG);
                             if(terminado > 0){
-                               // eliminarPorPid(status, backGround)
+                                // eliminarPorPid(status, backGround)
                             }
                         }
                     }
                 }
             }
-//----------------------------------------------------------------------------------------------------------------------
-//                                          Si introduce mas de 1 mandato
-//----------------------------------------------------------------------------------------------------------------------
-        } else if (line->ncommands > 1) {
-
+        } else if (line->ncommands > 1) { // Si introduce mas de 1 mandato
             //Creamos las tuberias
             int **pipes;
             pipes = (int **) malloc( (line->ncommands - 1) * sizeof(int*));
@@ -136,18 +104,11 @@ int main() {
             }
             //Recorremos todos los mandatos introducidos
             for (int i = 0; i < line->ncommands; i++) {
-
-                //Creamos un hijo por cada mandato y guardamos los pids en el almacen
                 pids[i] = fork();
-
-                //Si no es ni el padre ni el hijo hay error
                 if (pids[i] < 0) {
                     fprintf(stderr, "Se produjo un error al crear el proceso hijo.\n");
                     exit(-1);
-
-                //Proceso hijo
-                } else if (pids[i] == 0) {
-
+                } else if (pids[i] == 0) { //Proceso hijo
                     //Si el proceso es el primero tendremos que redirigir la salida del primer mandato a la salida de la
                     //primera tuberia y cerrar la lectura en ella
                     if (i == 0) {
@@ -160,7 +121,7 @@ int main() {
                         dup2(pipes[i][1], 1);
 
 
-                    //Si es el ultimo proceso :
+                        //Si es el ultimo proceso :
                     } else if (i == (line->ncommands - 1)) {
 
                         //comprobamos si hay redireccion de error o de salida
@@ -200,13 +161,10 @@ int main() {
                 free(pipes[j]);
             }
             free(pipes);
-
         }
         mostrarPrompt();
-
         free(pids);
     }
-
 
     for (int i = 0; i < longitudLista(backGround) -1; ++i) {
         free(backGround[i]);
