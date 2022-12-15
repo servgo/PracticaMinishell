@@ -42,7 +42,7 @@ int main() {
 
     while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
-        pid_t *pidAlmacen = malloc(sizeof(pid_t) * line->ncommands);
+        pid_t *pids = malloc(sizeof(pid_t) * line->ncommands);
 //----------------------------------------------------------------------------------------------------------------------
 //                                              Si introducen 1 mandato
 //----------------------------------------------------------------------------------------------------------------------
@@ -62,13 +62,13 @@ int main() {
 
                 //Si el mandato es otro cualquiera
             } else { //Es otro mandato
-                pidAlmacen[0] = fork();
+                pids[0] = fork();
 
-                if (pidAlmacen[0] < 0) {
+                if (pids[0] < 0) {
                     fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s \n", strerror(errno));
                     exit(1);
 
-                } else if (pidAlmacen[0] == 0) { //Proceso hijo
+                } else if (pids[0] == 0) { //Proceso hijo
 
                     if (line->redirect_input) {
                         if (redirInput() != -1) {
@@ -105,13 +105,13 @@ int main() {
                     if (line->background) {
                         printf("El mandato se ha mandado a background\n");
                         TElemento e;
-                        crearElemento(pidAlmacen, aux, line->ncommands, &e);
+                        crearElemento(pids, aux, line->ncommands, &e);
                         insertarLista(&e, backGround);
                         strcpy(aux,command);
-                        mostrarLista(backGround);
+                        //mostrarLista(backGround);
                     } else {
                         int est;
-                        waitpid(pidAlmacen[0], &est, 0);
+                        waitpid(pids[0], &est, 0);
                         for (int i = 1; i < longitudLista(backGround) -1; ++i) {
                             int status;
                             pid_t terminado = waitpid(-1, &status, WNOHANG);
@@ -138,15 +138,15 @@ int main() {
             for (int i = 0; i < line->ncommands; i++) {
 
                 //Creamos un hijo por cada mandato y guardamos los pids en el almacen
-                pidAlmacen[i] = fork();
+                pids[i] = fork();
 
                 //Si no es ni el padre ni el hijo hay error
-                if (pidAlmacen[i] < 0) {
+                if (pids[i] < 0) {
                     fprintf(stderr, "Se produjo un error al crear el proceso hijo.\n");
                     exit(-1);
 
                 //Proceso hijo
-                } else if (pidAlmacen[i] == 0) {
+                } else if (pids[i] == 0) {
 
                     //Si el proceso es el primero tendremos que redirigir la salida del primer mandato a la salida de la
                     //primera tuberia y cerrar la lectura en ella
@@ -204,7 +204,7 @@ int main() {
         }
         mostrarPrompt();
 
-        free(pidAlmacen);
+        free(pids);
     }
 
 
