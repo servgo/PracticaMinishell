@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include "TLista.h"
+#include "TList.h"
 
 #define AZUL "\x1b[34m"
 #define BLANCO "\x1b[0m"
