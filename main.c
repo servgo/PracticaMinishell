@@ -18,90 +18,205 @@ tline *line;
 
 //Funciones
 void mostrarPrompt();
-int commandExists(char *command);
-void ejeCd();
-int redirInput();
-int redirOutput();
-int redirError();
 
+int commandExists(char *command);
+
+void ejeCd();
+
+int redirInput();
+
+int redirOutput();
+
+int redirError();
 
 
 int main() {
     char command[1024];
+    char aux [1024];
     char *token;
-    pid_t pid;
+
+    TLista *backGround = malloc(sizeof(TLista));
+    crearListaVacia(backGround);
 
     mostrarPrompt();
+
     while (fgets(command, 1024, stdin)) {
         line = tokenize(command);
-
-//--------------------------------------------------------------------------
-//Si introducen 1 mandato
-//--------------------------------------------------------------------------
+        pid_t *pidAlmacen = malloc(sizeof(pid_t) * line->ncommands);
+//----------------------------------------------------------------------------------------------------------------------
+//                                              Si introducen 1 mandato
+//----------------------------------------------------------------------------------------------------------------------
         if (line->ncommands == 1) {
 
             //Si el mandato es cd
             if (strcmp(line->commands[0].argv[0], "cd") == 0) {
                 ejeCd();
 
-            //Si el mandato es jobs
+                //Si el mandato es jobs
             } else if (strcmp(line->commands[0].argv[0], "jobs") == 0) {
-                printf("jobs");
+                mostrarLista(backGround);
 
-            //Si el mandato es fg
+                //Si el mandato es fg
             } else if (strcmp(line->commands[0].argv[0], "fg") == 0) {
                 printf("fg");
 
-            //Si el mandato es otro cualquiera
+                //Si el mandato es otro cualquiera
             } else { //Es otro mandato
-                pid = fork();
+                pidAlmacen[0] = fork();
 
-                if (pid < 0) {
+                if (pidAlmacen[0] < 0) {
                     fprintf(stderr, "Se ha producido un error al crear el proceso hijo: %s \n", strerror(errno));
                     exit(1);
 
-                } else if (pid == 0) { //Proceso hijo
+                } else if (pidAlmacen[0] == 0) { //Proceso hijo
 
-                    if(line->background){
-
+                    if (line->redirect_input) {
+                        if (redirInput() != -1) {
+                            redirInput();
+                        }
                     }
 
-                    if(line->redirect_input){
-                        redirInput();
+                    if (line->redirect_error) {
+                        if (redirError() != -1) {
+                            redirError();
+                        }
                     }
 
-                    if(line->redirect_error){
-                        redirError();
-                    }
-
-                    if(line->redirect_output){
-                        redirOutput();
+                    if (line->redirect_output) {
+                        if (redirOutput() != -1) {
+                            redirOutput();
+                        }
                     }
 
                     if (commandExists(line->commands[0].filename) == 0) {
-                        execvp(line->commands[0].filename, line->commands[0].argv);
-                        fprintf(stderr, "Error al ejecutar el mandato \n");
-                        exit(1);
-                    } else{
+                        if (line->background) {
+                            int devNull = open("/dev/null", O_RDONLY);
+                            dup2(devNull, STDIN_FILENO);
+                        }
+                            execvp(line->commands[0].filename, line->commands[0].argv);
+                            fprintf(stderr, "Error al ejecutar el mandato \n");
+                            exit(1);
+
+                    } else {
                         fprintf(stderr, "El mandato %s no existe... \n", line->commands[0].argv[0]);
                         exit(1);
                     }
                 } else { //Proceso padre
                     if (line->background) {
-
+                        printf("El mandato se ha mandado a background\n");
+                        TElemento e;
+                        crearElemento(pidAlmacen, aux, line->ncommands, &e);
+                        insertarLista(&e, backGround);
+                        strcpy(aux,command);
+                        mostrarLista(backGround);
                     } else {
-                        waitpid(pid, NULL, 0);
+                        int est;
+                        waitpid(pidAlmacen[0], &est, 0);
+                        for (int i = 1; i < longitudLista(backGround) -1; ++i) {
+                            int status;
+                            pid_t terminado = waitpid(-1, &status, WNOHANG);
+                            if(terminado > 0){
+                               // eliminarPorPid(status, backGround)
+                            }
+                        }
                     }
                 }
             }
-
-//Si introduce mas de 1 mandato
+//----------------------------------------------------------------------------------------------------------------------
+//                                          Si introduce mas de 1 mandato
+//----------------------------------------------------------------------------------------------------------------------
         } else if (line->ncommands > 1) {
-            printf(BLANCO"Ejecutando mas de 1 comando %s", command);
+
+            //Creamos las tuberias
+            int **pipes;
+            pipes = (int **) malloc( (line->ncommands - 1) * sizeof(int*));
+            for (int i = 0; i < line->ncommands -1; ++i) {
+                pipes[i] = (int *) malloc(2 * sizeof(int*));
+                pipe(pipes[i]);
+            }
+            //Recorremos todos los mandatos introducidos
+            for (int i = 0; i < line->ncommands; i++) {
+
+                //Creamos un hijo por cada mandato y guardamos los pids en el almacen
+                pidAlmacen[i] = fork();
+
+                //Si no es ni el padre ni el hijo hay error
+                if (pidAlmacen[i] < 0) {
+                    fprintf(stderr, "Se produjo un error al crear el proceso hijo.\n");
+                    exit(-1);
+
+                //Proceso hijo
+                } else if (pidAlmacen[i] == 0) {
+
+                    //Si el proceso es el primero tendremos que redirigir la salida del primer mandato a la salida de la
+                    //primera tuberia y cerrar la lectura en ella
+                    if (i == 0) {
+
+                        //comprobamos que si hay redireccion de entrada
+                        if (line->redirect_input != NULL) {
+                            redirInput();
+                        }
+                        //De momento, la salida de la primera tuberia es nuestra salida estandar
+                        dup2(pipes[i][1], 1);
+
+
+                    //Si es el ultimo proceso :
+                    } else if (i == (line->ncommands - 1)) {
+
+                        //comprobamos si hay redireccion de error o de salida
+                        if (line->redirect_output != NULL) {
+                            redirOutput();
+                        }
+                        if (line->redirect_error != NULL) {
+                            redirError();
+                        }
+
+                        //hago que la entrada estandar sea la salida de la anterior
+                        dup2(pipes[i - 1][0], 0);
+
+                    } else {
+
+                        //Redirijo la salida anterior a la entrada de la siguiente
+                        dup2(pipes[i - 1][0], 0);
+                        dup2(pipes[i][1], 1);
+
+                    }
+                    //Eierro las tuberias innecesarias
+                    for (int j = 0; j < line->ncommands - 1; j++) {
+                        close(pipes[j][0]);
+                        close(pipes[j][1]);
+                    }
+
+                    //Ejecutamos el mandato
+                    execv(line->commands[i].filename, line->commands[i].argv);
+                    fprintf(stderr, "Error al ejecutar el mandato.\n");
+                    exit(1);
+                }
+            }
+            //Cierro las tuberías en el padre
+            for (int j = 0; j < line->ncommands - 1; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+                free(pipes[j]);
+            }
+            free(pipes);
+
         }
         mostrarPrompt();
+
+        free(pidAlmacen);
     }
+
+
+    for (int i = 0; i < longitudLista(backGround) -1; ++i) {
+        free(backGround[i]);
+    }
+    free(backGround);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+//                                                     Funciones
+//----------------------------------------------------------------------------------------------------------------------
 
 void mostrarPrompt() {
     char path[1024];
@@ -113,13 +228,13 @@ int commandExists(char *command) {
     return command == NULL;
 }
 
-void ejeCd(){
+void ejeCd() {
     char buf[1024];
-    if (line->commands[0].argc == 1){
+    if (line->commands[0].argc == 1) {
         chdir(getenv("HOME"));
         printf("Directorio actual modificado a: %s \n", getcwd(buf, 1024));
-    } else if (line->commands->argc == 2){
-        if (chdir(line->commands[0].argv[1]) == 0){
+    } else if (line->commands->argc == 2) {
+        if (chdir(line->commands[0].argv[1]) == 0) {
             printf("Directorio actual modificado correctamente a: %s \n", getcwd(buf, 1024));
         } else {
             perror("Error al modificar el directorio: ");
@@ -132,10 +247,10 @@ void ejeCd(){
 int redirInput() {
     int file = open(line->redirect_input, O_RDONLY);
     if (file != -1) {
-        dup2(file,0);
+        dup2(file, 0);
         return 0;
-    }else {
-        fprintf(stderr ,"Error al abrir el fichero. %s\n" ,strerror(errno));
+    } else {
+        fprintf(stderr, "Error al abrir el fichero. %s\n", strerror(errno));
         return -1;
     }
 }
@@ -143,10 +258,10 @@ int redirInput() {
 int redirOutput() {
     int file = creat(line->redirect_output, 0664);
     if (file != -1) {
-        dup2(file,STDOUT_FILENO);
+        dup2(file, STDOUT_FILENO);
         return 0;
-    }else {
-        fprintf(stderr ,"Error al abrir el fichero. %s\n" ,strerror(errno));
+    } else {
+        fprintf(stderr, "Error al abrir el fichero. %s\n", strerror(errno));
         return -1;
     }
 }
@@ -154,10 +269,10 @@ int redirOutput() {
 int redirError() {
     int file = creat(line->redirect_error, 0664);
     if (file != -1) {
-        dup2(file,2);
+        dup2(file, 2);
         return 0;
-    }else {
-        fprintf(stderr ,"Error al abrir el fichero. %s\n" ,strerror(errno));
+    } else {
+        fprintf(stderr, "Error al abrir el fichero. %s\n", strerror(errno));
         return -1;
     }
 }

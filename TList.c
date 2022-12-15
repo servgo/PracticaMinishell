@@ -17,6 +17,7 @@ void mostrarLista(TLista *l) {
     while (aux != NULL) { //  while(aux)
         printf("[%d] Ejecutando    ", i);
         mostrarElemento(&aux->info);
+        printf("\n");
         i++;
         aux = aux->sig;
     }
@@ -63,6 +64,7 @@ int eliminarLista(TElemento *e, TLista *l) { //borra la primera aparicion de e
     }
     return encontrado;
 }
+
 
 void primeroLista(TElemento *e, TLista *l) { //Condicion: Lista No vacia
     if (!esListaVacia(l)) {

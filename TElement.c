@@ -26,3 +26,4 @@ int igualElemento(TElemento *e1, TElemento *e2) {
     return e1->pidAlmacen == e2->pidAlmacen;
 }
 
+

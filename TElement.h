@@ -23,4 +23,3 @@ void asignarElemento(TElemento *e1, TElemento *e2);
 int igualElemento(TElemento *e1, TElemento *e2);
 
 
-
