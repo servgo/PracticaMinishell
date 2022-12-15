@@ -62,8 +62,28 @@ int main() {
                 exit(0);
             }
 
-            else if (strcmp(line->commands[0].argv[0], "fg") == 0) { //Si el mandato es fg
-                printf("fg");
+            else if (strcmp(line->commands[0].argv[0], "fg") == 0) { //comprobamos que el comando es fg
+                TElemento mand;
+                //Si no hay argumentos pasamos a primer plano el ultimo mandato introducido y lo eliminamos de la lista
+                if (line->commands[0].argv[1] == NULL) {
+                    primeroLista(&mand, backGround);
+                    restoLista(backGround);
+                    //como lo he traido a foreground me toca esperar a que termine
+                    for (int i = 0; i < mand.ncommands; i++) {
+                        waitpid(mand.pids[i], NULL, 0);
+                    }
+
+                }
+                //Si hay argumentos, traeremos el proceso indicado y lo eliminamos de la lista
+                else{
+                    int pidToInt = (int) strtol(line->commands[0].argv[1], NULL, 10); //Parseo a int
+                    if (!devolverPorIndiceLista(pidToInt, &mand, backGround)) {
+                        eliminarLista(&mand, backGround);
+                        for (int i = 0; i < mand.ncommands; i++) {
+                            waitpid(mand.pids[i], NULL, 0);
+                        }
+                    }
+                }
             }
 
             else { //Si el mandato es otro cualquiera
