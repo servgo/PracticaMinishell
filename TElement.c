@@ -8,7 +8,7 @@
 
 void crearElemento(pid_t *pidAlmacen, char *line, int ncommands, TElemento *e) {
     e->pidAlmacen = pidAlmacen;
-    e->line = line;
+    e->line = strdup(line);
     e->ncommands = ncommands;
 }
 
