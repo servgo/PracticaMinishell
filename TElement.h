@@ -9,7 +9,7 @@
 
 
 typedef struct{
-    pid_t *pidAlmacen;
+    pid_t *pids;
     char *line;
     int ncommands;
 } TElemento;
